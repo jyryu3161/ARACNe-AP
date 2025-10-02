@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="aracne" default="main" basedir=".">
 
-    <!-- ===== Directories ===== -->
     <property name="src.dir"    location="aracne"/>
     <property name="common.dir" location="common"/>
     <property name="lib.dir"    location="lib"/>
@@ -9,7 +8,6 @@
     <property name="dist.dir"   location="dist"/>
     <property name="docs.dir"   location="docs"/>
 
-    <!-- ===== Shared classpath (libs + compiled classes) ===== -->
     <path id="project.classpath">
         <fileset dir="${lib.dir}">
             <include name="**/*.jar"/>
@@ -17,7 +15,6 @@
         <pathelement location="${build.dir}"/>
     </path>
 
-    <!-- ===== Detect javadoc without using unsupported 'executable' attribute ===== -->
     <condition property="has.javadoc">
         <or>
             <available file="${java.home}/../bin/javadoc"/>
@@ -26,7 +23,6 @@
         </or>
     </condition>
 
-    <!-- ===== Clean / Make dirs ===== -->
     <target name="clean">
         <delete dir="${build.dir}"/>
         <delete dir="${docs.dir}"/>
@@ -39,25 +35,17 @@
         <mkdir dir="${dist.dir}"/>
     </target>
 
-    <!-- ===== Compile (build to bin) =====
-         * 오래된 Ant/JDK 조합 호환성을 위해 release/source/target은 지정하지 않습니다.
-         * 자바 8 호환 바이너리가 꼭 필요하면 JDK 9+에서 --release 8을 써야 하므로,
-           Ant/환경 업데이트 후 release="8"을 추가하세요. -->
     <target name="compile" depends="clean, makedir">
-        <!-- common 먼저 컴파일 -->
         <javac srcdir="${common.dir}" destdir="${build.dir}"
                includeantruntime="false">
             <classpath refid="project.classpath"/>
         </javac>
-
-        <!-- aracne 컴파일 -->
         <javac srcdir="${src.dir}" destdir="${build.dir}"
                includeantruntime="false">
             <classpath refid="project.classpath"/>
         </javac>
     </target>
 
-    <!-- ===== Javadoc (조건부 실행: javadoc 있을 때만) ===== -->
     <target name="docs" depends="compile" if="has.javadoc">
         <javadoc destdir="${docs.dir}"
                  sourcepath="."
@@ -67,20 +55,17 @@
         </javadoc>
     </target>
 
-    <!-- ===== Jar (리눅스 구분자 사용) ===== -->
     <target name="jar" depends="compile">
         <jar destfile="${dist.dir}/aracne.jar" basedir="${build.dir}">
             <manifest>
                 <attribute name="Main-Class" value="aracne.Aracne"/>
             </manifest>
-            <!-- 라이브러리들을 fat-jar에 병합 (중복 시 첫 항목 우선) -->
             <zipgroupfileset dir="${lib.dir}" includes="**/*.jar"/>
         </jar>
     </target>
 
-    <!-- ===== Main aggregate target ===== -->
     <target name="main" depends="compile, jar, docs">
-        <description>Main target: compile → jar → docs(있을 때)</description>
+        <description>Main target: compile → jar → docs (if available)</description>
     </target>
 
 </project>
