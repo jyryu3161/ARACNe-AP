@@ -1,69 +1,84 @@
 <?xml version="1.0"?>
 <project name="aracne" default="main" basedir=".">
-    <!-- Sets variables which can later be used. -->
-    <!-- The value of a property is accessed via ${} -->
-    <property name="src.dir" location="aracne" />
+    <!-- Directories -->
+    <property name="src.dir"    location="aracne" />
     <property name="common.dir" location="common" />
-    <property name="lib.dir" location="lib" />
-    <property name="build.dir" location="bin" />
-    <property name="dist.dir" location="dist" />
-    <property name="docs.dir" location="docs" />
+    <property name="lib.dir"    location="lib" />
+    <property name="build.dir"  location="bin" />
+    <property name="dist.dir"   location="dist" />
+    <property name="docs.dir"   location="docs" />
 
-    <!-- Deletes the existing build, docs and dist directory-->
+    <!-- Classpath shared by compile/javadoc -->
+    <path id="project.classpath">
+        <fileset dir="${lib.dir}">
+            <include name="**/*.jar"/>
+        </fileset>
+        <pathelement location="${build.dir}"/>
+    </path>
+
+    <!-- Detect javadoc executable; skip docs if missing -->
+    <condition property="has.javadoc">
+        <or>
+            <available executable="javadoc"/>
+            <available file="${java.home}/../bin/javadoc"/>
+        </or>
+    </condition>
+
+    <!-- Clean -->
     <target name="clean">
         <delete dir="${build.dir}" />
         <delete dir="${docs.dir}" />
         <delete dir="${dist.dir}" />
     </target>
 
-    <!-- Creates the  build, docs and dist directory-->
+    <!-- Make dirs -->
     <target name="makedir">
         <mkdir dir="${build.dir}" />
         <mkdir dir="${docs.dir}" />
         <mkdir dir="${dist.dir}" />
     </target>
 
-    <!-- Compiles the java code (including the usage of library for JUnit -->
+    <!-- Compile (JDK 21 사용 시 release=8로 호환 빌드) -->
     <target name="compile" depends="clean, makedir">
-        <javac srcdir="${common.dir}" destdir="${build.dir}">
-            <classpath>
-                   <fileset dir="${lib.dir}">
-                      <include name="**/*.jar" />
-                   </fileset>
-             </classpath>
-        </javac>
-        <javac srcdir="${src.dir}" destdir="${build.dir}">
-            <classpath>
-                   <fileset dir="${lib.dir}">
-                      <include name="**/*.jar" />
-                   </fileset>
-             </classpath>
+        <!-- common 먼저 -->
+        <javac srcdir="${common.dir}" destdir="${build.dir}"
+               includeantruntime="false"
+               release="8">
+            <classpath refid="project.classpath"/>
         </javac>
 
+        <!-- aracne -->
+        <javac srcdir="${src.dir}" destdir="${build.dir}"
+               includeantruntime="false"
+               release="8">
+            <classpath refid="project.classpath"/>
+        </javac>
     </target>
 
-    <!-- Creates Javadoc -->
-    <target name="docs" depends="compile">
-        <javadoc packagenames="src" sourcepath="${src.dir}" destdir="${docs.dir}">
-            <!-- Define which files / directory should get included, we include all -->
-             <fileset dir="${src.dir}">
-                <include name="**" />
-             </fileset>
+    <!-- Javadoc (둘 다 포함: aracne, common) -->
+    <target name="docs" depends="compile" if="has.javadoc">
+        <javadoc destdir="${docs.dir}"
+                 sourcepath="."
+                 packagenames="aracne,common"
+                 classpathref="project.classpath"
+                 failonerror="true">
+            <!-- 원하시면 executable 지정도 가능:
+                 executable="${java.home}/../bin/javadoc" -->
         </javadoc>
     </target>
 
-    <!--Creates the deployable jar file  -->
+    <!-- Jar (리눅스 구분자, fat-jar 구성용 zipgroupfileset 유지) -->
     <target name="jar" depends="compile">
-        <jar destfile="${dist.dir}\aracne.jar" basedir="${build.dir}">
+        <jar destfile="${dist.dir}/aracne.jar" basedir="${build.dir}">
             <manifest>
-                <attribute name="Main-Class" value="aracne.Aracne" />
+                <attribute name="Main-Class" value="aracne.Aracne"/>
             </manifest>
             <zipgroupfileset dir="${lib.dir}" includes="**/*.jar"/>
         </jar>
     </target>
 
+    <!-- Main -->
     <target name="main" depends="compile, jar, docs">
         <description>Main target</description>
     </target>
-
 </project>
